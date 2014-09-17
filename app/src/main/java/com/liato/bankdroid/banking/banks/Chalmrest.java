@@ -56,37 +56,19 @@ public class Chalmrest extends Bank {
 			String cardNr = username;
 			
 			HttpClient httpclient = new DefaultHttpClient();
-			HttpGet httpget = new HttpGet("http://kortladdning.chalmerskonferens.se/bgw.aspx?type=getCardAndArticles&card=" + cardNr);
+			HttpGet httpget = new HttpGet("http://emilan.se/chalmrest/?nr=" + cardNr);
 			HttpResponse response = httpclient.execute(httpget);
 			HttpEntity entity = response.getEntity();
 			if (entity == null)
 				throw new BankException("Couldn't connect!");
 			
-		    String s1 = EntityUtils.toString(entity);		    
-		    Pattern pattern = Pattern.compile("<ExtendedInfo Name=\"Kortvarde\" Type=\"System.Double\" >(.*?)</ExtendedInfo>");
-		    Matcher matcher = pattern.matcher(s1);
-		    
-		    if (!matcher.find()) 
-		    	throw new BankException("Couldn't parse value!"); 
+		    String s1 = EntityUtils.toString(entity);
+            String[] parts = s1.split("\n");
+            if (parts.length != 2)
+                throw new BankException("Invalid data!");
 
-		    String value = matcher.group(1);
-		    
-		    StringBuilder sb = new StringBuilder();
-		    int last = 0;
-		    Matcher match = Pattern.compile("_x([0-9A-Fa-f]{4})_").matcher(value);
-		    while (match.find()) {
-		    	sb.append(value.substring(last, Math.max(match.start() - 1, 0)));
-		    	int i = Integer.parseInt(match.group(1), 16);
-		    	sb.append((char)i);
-		    	last = match.end();
-		    }
-		    sb.append(value.substring(last));
-		    value = sb.toString();
-		    
-		    matcher = Pattern.compile("<CardInfo id=\"" + cardNr + "\" Name=\"(.*?)\"").matcher(s1);
-		    if (!matcher.find())
-		    	throw new BankException("Coldn't parse name!");
-		    String name = matcher.group(1);
+            String name = parts[0];
+            String value = parts[1].replace(',', '.');
 		    
 		    accounts.add(new Account(name, BigDecimal.valueOf(Double.parseDouble(value)), "1"));
 		}
